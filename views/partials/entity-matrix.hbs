@@ -1,0 +1,17 @@
+<ul class="list-unstyled row">
+    {{#each entities}}
+        <li class="col-6 col-sm-4 col-lg-3 mt-2 mb-2">
+            <div class="d-flex flex-column align-items-center justify-content-center dependent-item">
+                <div class="text-center">
+                    <a href="{{url}}">
+                        <img src="/images/blank.1111111.svg"
+                             class="img-fluid lazy-load" data-src="{{image}}" alt="Picture of {{name}}" />
+                    </a>
+                    <div class="mt-2">
+                        <a href="{{url}}">{{name}}</a>
+                    </div>
+                </div>
+            </div>
+        </li>
+    {{/each}}
+</ul>

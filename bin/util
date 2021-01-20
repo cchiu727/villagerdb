@@ -454,49 +454,79 @@ async function buildSimilarIndex() {
             throw new Error('Item not found in redis, giving up: ' + parsed.id);
         }
 
-        // Ask ElasticSearch to give us items that are close.
-        const results = await es.search({
-            index: indexName,
-            from: 0,
-            size: 5,
-            body: {
-                query: {
-                    bool: {
-                        must_not: [
-                            {
-                                term: {
-                                    _id: searchConfig.itemEntityType + '-' + parsed.id
-                                }
-                            }
-                        ],
-                        should: [
-                            {
-                                match: {
-                                    name: {
-                                        query: parsed.name,
-                                        analyzer: 'vdb_ascii_fold'
+        for (let game in parsed.games) {
+            // Ask ElasticSearch to give us items that are close.
+            const results = await es.search({
+                index: indexName,
+                from: 0,
+                size: 4,
+                body: {
+                    query: {
+                        bool: {
+                            must: [
+                                {
+                                    term: {
+                                        type: 'item'
+                                    }
+                                },
+                                {
+                                    term: {
+                                        game: game
                                     }
                                 }
-                            },
-                            {
-                                match: {
-                                    ngram: {
-                                        query: parsed.name,
-                                        analyzer: 'vdb_ascii_fold'
+                            ],
+                            must_not: [
+                                {
+                                    term: {
+                                        _id: searchConfig.itemEntityType + '-' + parsed.id
                                     }
                                 }
+                            ],
+                            should: [
+                                {
+                                    match: {
+                                        name: {
+                                            query: parsed.name,
+                                            analyzer: 'vdb_ascii_fold'
+                                        }
+                                    }
+                                },
+                                {
+                                    match: {
+                                        ngram: {
+                                            query: parsed.name,
+                                            analyzer: 'vdb_ascii_fold'
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    sort: [
+                        {
+                            _score: {
+                                order: 'desc'
                             }
-                        ]
-                    }
+                        }
+                    ]
+                }
+            });
+
+            // Iterate over result set
+            if (results.hits.hits.length > 0) {
+                redisItem.games[game].similarItems = [];
+                for (let h of results.hits.hits) {
+                    redisItem.games[game].similarItems.push({
+                        url: h._source.url,
+                        name: h._source.name,
+                        image: h._source.image.thumb
+                    });
                 }
             }
-        });
 
-        //console.log('------ ' + parsed.name);
-        for (let h of results.hits.hits) {
-            //console.log(h._source.name);
+            // Put it in redis
+            await items.updateEntity(redisItem.id, redisItem);
         }
-        //console.log('-----------------------------');
     }
 }
 /**

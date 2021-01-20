@@ -147,7 +147,9 @@ function formatItem(item) {
                 hasRecipe: typeof game.recipe !== 'undefined',
                 normalRecipe: game.normalRecipe,
                 fullRecipe: game.fullRecipe,
-                set: game.set
+                set: game.set,
+                hasSimilarItems: typeof game.similarItems === 'object',
+                similarItems: game.similarItems
             };
         }
     }
@@ -157,6 +159,15 @@ function formatItem(item) {
     formatted.variations = JSON.stringify(typeof item.variations === 'object' ? item.variations : {});
     formatted.variationImages = JSON.stringify(typeof item.variationImages === 'object' ? item.variationImages
         : {});
+
+    // Dependents data (NH only)
+    if (typeof formatted.gamesData['nh'] !== 'undefined' && typeof item.recipeDependents !== 'undefined') {
+        formatted.gamesData['nh'].dependents = item.recipeDependents;
+        formatted.gamesData['nh'].dependentsCount = typeof item.recipeDependents === 'object' ?
+            item.recipeDependents.length : 0;
+        formatted.gamesData['nh'].hasDependents = item.recipeDependents.length > 0;
+        formatted.recipesText = 'recipe' + (item.recipeDependents.length > 1 ? 's' : '');
+    }
     return formatted;
 }
 
@@ -192,12 +203,6 @@ async function loadItem(id) {
     // Ownership data
     result.hasOwnership = typeof item.owners !== 'undefined' && item.owners.length > 0;
     result.owners = item.owners;
-
-    // Dependents data.
-    result.dependents = item.recipeDependents;
-    result.dependentsCount = typeof item.recipeDependents === 'object' ? result.dependents.length : 0;
-    result.hasDependents = result.dependentsCount > 0;
-    result.recipesText = 'recipe' + (result.dependentsCount > 1 ? 's' : '');
 
     // Social media information
     result.pageUrl = 'https://villagerdb.com/item/' + item.id;
